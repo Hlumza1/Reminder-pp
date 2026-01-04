@@ -1,51 +1,41 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AppSettings, IntervalMinutes } from './types';
 import { storageService } from './services/storageService';
 import { notificationService } from './services/notificationService';
 
 const App: React.FC = () => {
-  const [settings, setSettings] = useState<AppSettings>(storageService.loadSettings());
+  const [settings, setSettings] = useState<AppSettings>(() => storageService.loadSettings());
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>(
     typeof Notification !== 'undefined' ? Notification.permission : 'default'
   );
   const [isMounted, setIsMounted] = useState(false);
-  // Using ReturnType<typeof setInterval> to avoid dependency on NodeJS namespace in browser environments
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Initialize
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Update Settings
   const updateSettings = (updates: Partial<AppSettings>) => {
     const newSettings = { ...settings, ...updates };
     setSettings(newSettings);
     storageService.saveSettings(newSettings);
   };
 
-  // Notification Scheduling Logic
   const checkAndPing = useCallback(() => {
     if (!settings.isEnabled) return;
-    
     if (notificationService.isWithinRange(settings)) {
       notificationService.sendPing();
     }
   }, [settings]);
 
-  // Handle Timer
   useEffect(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
 
     if (settings.isEnabled) {
-      // Start the interval timer
       const intervalMs = settings.interval * 60 * 1000;
       timerRef.current = setInterval(checkAndPing, intervalMs);
-      
-      // Initial check when turned on
       checkAndPing();
     }
 
@@ -57,26 +47,23 @@ const App: React.FC = () => {
   const handleToggle = async () => {
     if (!settings.isEnabled) {
       const granted = await notificationService.requestPermission();
-      setPermissionStatus(Notification.permission);
+      setPermissionStatus(typeof Notification !== 'undefined' ? Notification.permission : 'denied');
       if (!granted) {
-        alert("Please enable notifications to use this app.");
         return;
       }
     }
     updateSettings({ isEnabled: !settings.isEnabled });
   };
 
-  if (!isMounted) return null;
+  if (!isMounted) return <div className="min-h-screen bg-white" />;
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center px-6 py-12 max-w-md mx-auto">
-      {/* Header */}
       <header className="w-full mb-12 text-center">
         <h1 className="text-3xl font-light tracking-tight text-gray-900 mb-2">Daily Water Ping</h1>
         <p className="text-sm text-gray-400 font-normal">Pure and simple hydration reminders.</p>
       </header>
 
-      {/* Toggle Section */}
       <div className="w-full mb-12 flex flex-col items-center">
         <button
           onClick={handleToggle}
@@ -95,9 +82,7 @@ const App: React.FC = () => {
         </span>
       </div>
 
-      {/* Settings List */}
       <div className="w-full space-y-10">
-        {/* Time Range */}
         <section>
           <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Activity Window</h2>
           <div className="grid grid-cols-2 gap-4">
@@ -122,7 +107,6 @@ const App: React.FC = () => {
           </div>
         </section>
 
-        {/* Interval Selector */}
         <section>
           <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Reminder Frequency</h2>
           <div className="grid grid-cols-4 gap-2">
@@ -143,16 +127,14 @@ const App: React.FC = () => {
         </section>
       </div>
 
-      {/* Permissions Helper */}
       {permissionStatus === 'denied' && (
-        <div className="mt-12 p-4 bg-red-50 rounded-xl text-center">
+        <div className="mt-12 p-4 bg-red-50 rounded-xl text-center w-full">
           <p className="text-xs text-red-600">
             Notifications are blocked. Please enable them in your browser settings to receive pings.
           </p>
         </div>
       )}
 
-      {/* Footer Info */}
       <footer className="mt-auto pt-12 text-center">
         <p className="text-[10px] text-gray-300 uppercase tracking-widest leading-loose">
           Privacy focused • No data collection<br/>
