@@ -1,0 +1,5 @@
+{
+  "name": "Daily Water Ping",
+  "description": "A minimalist hydration reminder app that sends scheduled pings within your active hours.",
+  "requestFramePermissions": []
+}
